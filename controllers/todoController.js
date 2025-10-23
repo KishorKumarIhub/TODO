@@ -138,6 +138,7 @@ const getAllTodos = async (req, res) => {
       filter.completed = req.query.completed === 'true';
     }
     
+    
     if (req.query.priority) {
       filter.priority = req.query.priority;
     }

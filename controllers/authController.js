@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 /**
  * @swagger
@@ -12,6 +13,7 @@ const User = require('../models/User');
  *         - username
  *         - email
  *         - password
+ *         - token
  *       properties:
  *         _id:
  *           type: string
@@ -25,6 +27,9 @@ const User = require('../models/User');
  *         password:
  *           type: string
  *           description: The password of the user
+ *         token:
+ *           type: string
+ *           description: JWT token for authentication
  *         createdAt:
  *           type: string
  *           format: date
@@ -115,21 +120,22 @@ const signup = async (req, res) => {
       });
     }
 
-    // Create new user
-    const user = new User({
-      username,
-      email,
-      password
-    });
-
-    await user.save();
-
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: new mongoose.Types.ObjectId() }, // Generate ObjectId for new user
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
+
+    // Create new user with token
+    const user = new User({
+      username,
+      email,
+      password,
+      token
+    });
+
+    await user.save();
 
     res.status(201).json({
       success: true,
@@ -220,6 +226,10 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
+
+    // Update user token
+    user.token = token;
+    await user.save();
 
     res.status(200).json({
       success: true,
